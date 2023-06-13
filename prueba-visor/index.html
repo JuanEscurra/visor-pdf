@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <title>Visor</title>
+  <style>
+    body {
+      padding: 15px;
+    }
+
+    #container {
+      margin: auto;
+      width: 70%;
+      height: 90vh;
+      overflow: auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px 0;
+      background-color: gray;
+      border: 2px solid gray;
+    }
+    #container > canvas {
+      margin-block: auto;
+    }
+    #options {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div id="options">
+    <button id="download" type="button" class="btn btn-primary">
+      Descargar
+    </button>
+    <div class="btn-group" role="group" aria-label="Basic example">
+      <button type="button" id="btnDecreaseZoom" class="btn btn-primary"> - </button>
+      <button type="button" id="btnIncrementZoom" class="btn btn-primary"> + </button>
+    </div>
+    <div class="input-group mb-3 d-flex align-items">
+      <input type="number" class="form-control" id="inputCurrentPage" placeholder="Numero de pagina" value="1" min="1" max="9">
+      <span class="input-group-text">/</span>
+      <input type="number" class="form-control" id="inputLimitPage" disabled placeholder="Server">
+    </div>
+  </div>
+  
+  
+  
+  <div id="container"></div>
+  <script>
+  var scale = 1.5;
+  const container = document.getElementById('container');
+  const inputCurrentPage = document.getElementById('inputCurrentPage');
+  const inputLimitPage = document.getElementById('inputLimitPage');
+    // If absolute URL from the remote server is provided, configure the CORS
+  // header on that server.
+  var url = 'http://localhost:8080/files/1Z0-808-questions.pdf';
+  var pdfjsLib = window['pdfjs-dist/build/pdf'];
+  var pdfDocument;
+
+  console.log('iniciando')
+  // Asynchronous download of PDF
+  var loadingTask = pdfjsLib.getDocument(url);
+
+  loadingTask.promise.then(function(pdf) {
+    inputLimitPage.value = pdf.numPages;
+    pdfDocument = pdf;
+
+    pintarPaginas(pdf);
+    
+  }, function (reason) {
+    // PDF loading error
+    console.error(reason);
+  });
+
+  document.getElementById('download').addEventListener('click', () => {
+    const element = document.createElement('a');
+    element.href = url;
+    element.click();
+  })
+
+  document.getElementById('btnIncrementZoom').addEventListener('click', () => {
+    scale += 0.1;
+    pintarPaginas(pdfDocument);
+  })
+
+  document.getElementById('btnDecreaseZoom').addEventListener('click', () => {
+    scale -= 0.1;
+    pintarPaginas(pdfDocument);
+  })
+
+  function pintarPaginas(pdf) {
+    container.innerHTML = '';
+    console.log('pdf: ', pdf);
+    for (var pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+
+      // Renderizar la página en el contenedor
+      pdf.getPage(pageNumber).then(function(page) {
+        var canvas = document.createElement('canvas');
+        var viewport = page.getViewport({ scale });
+        var context = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        page.render({
+          canvasContext: context,
+          viewport: viewport,
+
+        });
+
+        console.log('page: ', page);
+        container.appendChild(canvas);
+      });
+    }
+  }
+
+  inputCurrentPage.addEventListener('input', (e) => {
+    if(e.target.value === null || e.target.value === '') return;
+    container.children[e.target.value - 1].scrollIntoView();
+  })
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+</body>
+</html>
